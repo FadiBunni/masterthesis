@@ -1,0 +1,19 @@
+{
+  "name": "gatewaylogger",
+  "version": "1.0.0",
+  "description": "lorawangatewaylogger",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fadi Bunni",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "mqtt": "^4.2.8",
+    "socket.io": "^2.2.0",
+    "googleapis": "^95.0.0"
+  }
+}
