@@ -35,6 +35,7 @@ client.on('message', function(topic, message) {
     //console.log("obj from TTN: ", objTTN)
     objTimeStampUplink = objTTN.received_at
     objDecodedUplink = objTTN.uplink_message.decoded_payload;
+    console.log("Timestamp from TTN: ", objTimeStampUplink);
     console.log("Decoded data from TTN: ", objDecodedUplink);
 
     async function googleSheet (objTimeStampUplink,objDecodedUplink) {
