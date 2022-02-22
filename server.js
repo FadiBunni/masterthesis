@@ -34,7 +34,9 @@ client.on('message', function(topic, message) {
     var objTTN = JSON.parse(message);
     //console.log("obj from TTN: ", objTTN)
     objTimeStampUplink = objTTN.received_at
-    objDecodedUplink = objTTN.uplink_message.decoded_payload;
+    if(objTTN.uplink_message.decoded_payload !== undefined ){
+      objDecodedUplink = objTTN.uplink_message.decoded_payload;
+    }
     console.log("Timestamp from TTN: ", objTimeStampUplink);
     console.log("Decoded data from TTN: ", objDecodedUplink);
 
