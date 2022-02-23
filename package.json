@@ -15,5 +15,8 @@
     "mqtt": "^4.2.8",
     "socket.io": "^2.2.0",
     "googleapis": "^95.0.0"
+  },
+  "engines": {
+    "node": "16.x"
   }
 }
