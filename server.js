@@ -64,7 +64,8 @@ client.on('message', function(topic, message) {
                   objDecodedUplink.busVoltageBattery,objDecodedUplink.busVoltageOutput,objDecodedUplink.busVoltageSolar,
                   objDecodedUplink.current_mABattery,objDecodedUplink.current_mAOutput,objDecodedUplink.current_mASolar,
                   objDecodedUplink.loadVoltageBattery,objDecodedUplink.loadVoltageOutput,objDecodedUplink.loadVoltageSolar,
-                  objDecodedUplink.shuntVoltageBattery,objDecodedUplink.shuntVoltageOutput,objDecodedUplink.shuntVoltageSolar  
+                  objDecodedUplink.shuntVoltageBattery,objDecodedUplink.shuntVoltageOutput,objDecodedUplink.shuntVoltageSolar,
+                  objDecodedUplink.temperture
           ]]
         }
       });    
