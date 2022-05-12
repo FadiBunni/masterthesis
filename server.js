@@ -34,7 +34,7 @@ client.on('message', function(topic, message) {
     var objTTN = JSON.parse(message);
     //console.log("obj from TTN: ", objTTN)
     objTimeStampUplink = objTTN.received_at
-    if(objTTN.uplink_message.decoded_payload !== undefined ){
+    if(objTTN !== undefined ){
       objDecodedUplink = objTTN.uplink_message.decoded_payload;
     }
     console.log("Timestamp from TTN: ", objTimeStampUplink);
@@ -72,7 +72,6 @@ client.on('message', function(topic, message) {
       //console.log(metaData.data);
       //console.log(getRows.data)
     }
-    
     googleSheet(objTimeStampUplink, objDecodedUplink);
 });
 
