@@ -7,7 +7,7 @@ After=network-online.target
 Restart=always
 RestartSec=30
 WorkingDirectory=/home/pi/lora_1302/sx1302_hal/lorasdk
-ExecStartPre=/home/pi/lora_1302/sx1302_hal/lorasdk/reset_lgw.sh start /home/pi/lora_1302/sx1302-hal/lorasdk/global_conf.json.sx1250.EU868
+ExecStartPre=/home/pi/lora_1302/sx1302_hal/lorasdk/reset_lgw.sh start /home/pi/lora_1302/sx1302-hal/lorasdk/global_conf.json
 ExecStart=/home/pi/lora_1302/sx1302_hal/lorasdk/lora_pkt_fwd -c global_conf.json.sx1250.EU868
 ExecStopPost=/home/pi/lora_1302/sx1302_hal/lorasdk/reset_lgw.sh stop
 
