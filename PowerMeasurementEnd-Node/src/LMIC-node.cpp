@@ -71,9 +71,9 @@ AHT10 myAHT10(AHT10_ADDRESS_0X38);
 #define FPORT 10
 #define CMDPORT 100
 #define RESETCMD 0xC0
-float SolarShunt = 0.0103F;
-float BatteryShunt = 0.0079F;
-float OutputShunt = 0.0115F;
+float SolarShunt = 0.0105F;
+float BatteryShunt = 0.0100F; //0.0079 you need to add 20+mA at low currents
+float OutputShunt = 0.01155F;
 
 // Define structures for handling reporting via TTN
 struct messageSet {
