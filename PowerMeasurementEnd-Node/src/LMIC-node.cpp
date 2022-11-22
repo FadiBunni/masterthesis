@@ -851,10 +851,21 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t* data,
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
 //  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀▀ ▀ ▀ ▀▀ 
 
+#define rpi_pwr_pin 32
+#define rpi_heartbeat_pin 35
+#define led_pin 2
 
 void setup() {
     // boardInit(InitType::Hardware) must be called at start of setup() before anything else.
     bool hardwareInitSucceeded = boardInit(InitType::Hardware);
+
+    // GPIO OUTPUT
+    pinMode(rpi_pwr_pin, OUTPUT);
+    digitalWrite(rpi_pwr_pin, LOW);
+    pinMode(led_pin, OUTPUT);
+    digitalWrite(led_pin, HIGH);
+    // GPIO INPUT
+    pinMode(rpi_heartbeat_pin, INPUT);
 
     #ifdef USE_DISPLAY 
         initDisplay();
@@ -935,7 +946,15 @@ void loop() {
     axp.setPowerOutPut(AXP192_DCDC2, AXP202_ON);
     axp.setPowerOutPut(AXP192_EXTEN, AXP202_ON);
     axp.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
-    os_runloop_once();  
+    os_runloop_once();
+
+    if(digitalRead(rpi_heartbeat_pin)){
+        digitalWrite(led_pin, HIGH);
+        //Serial2.println("RPI HEARTBEAT");
+    }
+    else{
+        digitalWrite(led_pin, LOW);
+    }
 
     // unsigned long currentMillis = millis();
 
