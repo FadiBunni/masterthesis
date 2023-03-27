@@ -75,12 +75,12 @@ AHT10 myAHT10(AHT10_ADDRESS_0X38);
 #define rpi_heartbeat_pin 35
 #define led_pin 2
 float SolarShunt = 0.0105F;
-float BatteryShunt = 0.0100F; //0.0079 you need to add 20+mA at low currents
-float OutputShunt = 0.01155F;
+float BatteryShunt = 0.0090F; //0.0079 you need to add 20+mA at low currents
+float OutputShunt = 0.01F;
 RTC_DATA_ATTR lmic_t RTC_LMIC;
 boolean GOTO_DEEPSLEEP = false;
 
-// Define structures for handling reporting via TTN
+// Define structures for handling reporting via application server
 struct messageSet {
     //solar
     float busVoltageSolar; 
@@ -783,52 +783,6 @@ void processWork(ostime_t doWorkJobTimeStamp)
 
     if (LMIC.devaddr != 0) {
 
-        // float busVoltageSolar = 0;
-        // float current_mASolar = 0;
-        // float shuntVoltageSolar = 0;
-        // float loadVoltageSolar = 0;
-
-        // busVoltageSolar = ina3221.getBusVoltage_V(SOLAR_CELL_CHANNEL);
-        // message.busVoltageSolar = busVoltageSolar; 
-        // shuntVoltageSolar = ina3221.getShuntVoltage_mV(SOLAR_CELL_CHANNEL);
-        // message.shuntVoltageSolar = shuntVoltageSolar;
-        // current_mASolar = -shuntVoltageSolar/SolarShunt;
-        // message.current_mASolar = current_mASolar; 
-        // loadVoltageSolar = busVoltageSolar + (shuntVoltageSolar / 1000);
-        // message.loadVoltageSolar = loadVoltageSolar; 
-        
-        // float busVoltageBattery = 0;
-        // float current_mABattery = 0;
-        // float shuntVoltageBattery = 0;
-        // float loadVoltageBattery = 0;
-
-        // busVoltageBattery = ina3221.getBusVoltage_V(LIPO_BATTERY_CHANNEL);
-        // message.busVoltageBattery = busVoltageBattery;
-        // shuntVoltageBattery = ina3221.getShuntVoltage_mV(LIPO_BATTERY_CHANNEL);
-        // message.shuntVoltageBattery = shuntVoltageBattery;
-        // current_mABattery = -shuntVoltageBattery/BatteryShunt; // minus is to get the "sense" right.   - means the battery is charging, + that it is discharging
-        // message.current_mABattery = current_mABattery;
-        // loadVoltageBattery = busVoltageBattery + (shuntVoltageBattery / 1000);
-        // message.loadVoltageBattery = loadVoltageBattery;
-        
-        // float busVoltageOutput = 0;
-        // float current_mAOutput = 0;
-        // float shuntVoltageOutput = 0;
-        // float loadVoltageOutput = 0;
-
-        // busVoltageOutput = ina3221.getBusVoltage_V(OUTPUT_CHANNEL);
-        // message.busVoltageOutput=busVoltageOutput;
-        // shuntVoltageOutput = ina3221.getShuntVoltage_mV(OUTPUT_CHANNEL);
-        // message.shuntVoltageOutput = shuntVoltageOutput;
-        // current_mAOutput = shuntVoltageOutput/OutputShunt;
-        // message.current_mAOutput = current_mAOutput;
-        // loadVoltageOutput = busVoltageOutput + (shuntVoltageOutput / 1000);
-        // message.loadVoltageOutput = loadVoltageOutput;
-
-        // message.temperture = myAHT10.readTemperature();
-
-        // Collect input data.
-
         ostime_t timestamp = os_getTime();
 
         #ifdef USE_DISPLAY
@@ -904,6 +858,15 @@ void processWork(ostime_t doWorkJobTimeStamp)
             message.loadVoltageOutput = loadVoltageOutput;
 
             message.temperture = myAHT10.readTemperature();
+
+            // Only charge the small battery in the T-Beam, when the Voltage of the big battery is above 13V
+            if(busVoltageBattery > 13){
+                 axp.enableChargeing(true);
+            } else {
+                axp.enableChargeing(false);
+            }
+
+            axp.setChgLEDMode(AXP20X_LED_OFF);
 
             // Collect input data.
             scheduleUplink(FPORT, (uint8_t*)&message, sizeof(message));
@@ -1018,36 +981,35 @@ void setup() {
 unsigned long previousMillis = 0; 
 
 // constants won't change:
-// const long interval = 1000; 
+// const long interval = 2000; 
 
 void loop() {    
     static unsigned long lastPrintTime = 0;
-    
+
     os_runloop_once();
-
-    if(digitalRead(rpi_heartbeat_pin)){
-        digitalWrite(led_pin, HIGH);
-    }
-    else{
-        digitalWrite(led_pin, LOW);
-    }
-
-        const bool timeCriticalJobs = os_queryTimeCriticalJobs(ms2osticksRound((TIME_TO_SLEEP * 1000)));
+    
+    // if(digitalRead(rpi_heartbeat_pin)){
+    //     digitalWrite(led_pin, HIGH);
+    // }
+    // else{
+    //     digitalWrite(led_pin, LOW);
+    // }
+        const bool timeCriticalJobs = os_queryTimeCriticalJobs(ms2osticks((TIME_TO_SLEEP * 1000)));
     if (!timeCriticalJobs && GOTO_DEEPSLEEP == true && !(LMIC.opmode & OP_TXRXPEND)){
         Serial.print(F("Can go sleep "));
         SaveLMICToRTC(TIME_TO_SLEEP);
-        esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
         axp.setPowerOutPut(AXP192_LDO2, AXP202_OFF);
         axp.setPowerOutPut(AXP192_LDO3, AXP202_OFF);
         axp.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
         axp.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
         axp.setPowerOutPut(AXP192_DCDC1, AXP202_OFF); 
         axp.setChgLEDMode(AXP20X_LED_OFF);
+        esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
         esp_deep_sleep_start();
     }
     else if (lastPrintTime + 2000 < millis())
     {
-        axp.setChgLEDMode(AXP20X_LED_BLINK_4HZ);
+        axp.setChgLEDMode(AXP20X_LED_OFF);
         axp.setPowerOutPut(AXP192_LDO2, AXP202_ON);
         axp.setPowerOutPut(AXP192_DCDC2, AXP202_ON);
         axp.setPowerOutPut(AXP192_EXTEN, AXP202_ON);
@@ -1056,7 +1018,6 @@ void loop() {
         Serial.print(F("TimeCriticalJobs: "));
         Serial.print(timeCriticalJobs);
         Serial.print(" ");
-
         lastPrintTime = millis();
     }
 
@@ -1067,19 +1028,19 @@ void loop() {
     //    previousMillis = currentMillis;
         
     //     serial.println("------------------------------");
-        // float busVoltageSolar = 0;
-        // float current_mASolar = 0;
-        // float shuntVoltageSolar = 0;
-        // float loadVoltageSolar = 0;
+    //     float busVoltageSolar = 0;
+    //     float current_mASolar = 0;
+    //     float shuntVoltageSolar = 0;
+    //     float loadVoltageSolar = 0;
 
-        // busVoltageSolar = ina3221.getBusVoltage_V(SOLAR_CELL_CHANNEL);
-        // message.busVoltageSolar = busVoltageSolar; 
-        // shuntVoltageSolar = ina3221.getShuntVoltage_mV(SOLAR_CELL_CHANNEL);
-        // message.shuntVoltageSolar = shuntVoltageSolar;
-        // current_mASolar = -shuntVoltageSolar/SolarShunt;
-        // message.current_mASolar = current_mASolar; 
-        // loadVoltageSolar = busVoltageSolar + (shuntVoltageSolar / 1000);
-        // message.loadVoltageSolar = loadVoltageSolar; 
+    //     busVoltageSolar = ina3221.getBusVoltage_V(SOLAR_CELL_CHANNEL);
+    //     message.busVoltageSolar = busVoltageSolar; 
+    //     shuntVoltageSolar = ina3221.getShuntVoltage_mV(SOLAR_CELL_CHANNEL);
+    //     message.shuntVoltageSolar = shuntVoltageSolar;
+    //     current_mASolar = -shuntVoltageSolar/SolarShunt;
+    //     message.current_mASolar = current_mASolar; 
+    //     loadVoltageSolar = busVoltageSolar + (shuntVoltageSolar / 1000);
+    //     message.loadVoltageSolar = loadVoltageSolar; 
         
     //     serial.print("Solar Cell Bus Voltage 1:   "); serial.print(busVoltageSolar); serial.println(" V");
     //     serial.print("Solar Cell Current 1:       "); serial.print(current_mASolar); serial.println(" mA");
@@ -1088,19 +1049,19 @@ void loop() {
 
     //     serial.println("");
         
-        // float busVoltageBattery = 0;
-        // float current_mABattery = 0;
-        // float shuntVoltageBattery = 0;
-        // float loadVoltageBattery = 0;
+    //     float busVoltageBattery = 0;
+    //     float current_mABattery = 0;
+    //     float shuntVoltageBattery = 0;
+    //     float loadVoltageBattery = 0;
 
-        // busVoltageBattery = ina3221.getBusVoltage_V(LIPO_BATTERY_CHANNEL);
-        // message.busVoltageBattery = busVoltageBattery;
-        // shuntVoltageBattery = ina3221.getShuntVoltage_mV(LIPO_BATTERY_CHANNEL);
-        // message.shuntVoltageBattery = shuntVoltageBattery;
-        // current_mABattery = -shuntVoltageBattery/BatteryShunt; // minus is to get the "sense" right.   - means the battery is charging, + that it is discharging
-        // message.current_mABattery = current_mABattery;
-        // loadVoltageBattery = busVoltageBattery + (shuntVoltageBattery / 1000);
-        // message.loadVoltageBattery = loadVoltageBattery;
+    //     busVoltageBattery = ina3221.getBusVoltage_V(LIPO_BATTERY_CHANNEL);
+    //     message.busVoltageBattery = busVoltageBattery;
+    //     shuntVoltageBattery = ina3221.getShuntVoltage_mV(LIPO_BATTERY_CHANNEL);
+    //     message.shuntVoltageBattery = shuntVoltageBattery;
+    //     current_mABattery = -shuntVoltageBattery/BatteryShunt; // minus is to get the "sense" right.   - means the battery is charging, + that it is discharging
+    //     message.current_mABattery = current_mABattery;
+    //     loadVoltageBattery = busVoltageBattery + (shuntVoltageBattery / 1000);
+    //     message.loadVoltageBattery = loadVoltageBattery;
 
     //     serial.print("LIPO_Battery Bus Voltage 2:   "); serial.print(busVoltageBattery); serial.println(" V");
     //     serial.print("LIPO_Battery Current 2:       "); serial.print(current_mABattery); serial.println(" mA");
@@ -1109,19 +1070,19 @@ void loop() {
 
     //     serial.println("");
         
-        // float busVoltageOutput = 0;
-        // float current_mAOutput = 0;
-        // float shuntVoltageOutput = 0;
-        // float loadVoltageOutput = 0;
+    //     float busVoltageOutput = 0;
+    //     float current_mAOutput = 0;
+    //     float shuntVoltageOutput = 0;
+    //     float loadVoltageOutput = 0;
 
-        // busVoltageOutput = ina3221.getBusVoltage_V(OUTPUT_CHANNEL);
-        // message.busVoltageOutput=busVoltageOutput;
-        // shuntVoltageOutput = ina3221.getShuntVoltage_mV(OUTPUT_CHANNEL);
-        // message.shuntVoltageOutput = shuntVoltageOutput;
-        // current_mAOutput = shuntVoltageOutput/OutputShunt;
-        // message.current_mAOutput = current_mAOutput;
-        // loadVoltageOutput = busVoltageOutput + (shuntVoltageOutput / 1000);
-        // message.loadVoltageOutput = loadVoltageOutput;
+    //     busVoltageOutput = ina3221.getBusVoltage_V(OUTPUT_CHANNEL);
+    //     message.busVoltageOutput=busVoltageOutput;
+    //     shuntVoltageOutput = ina3221.getShuntVoltage_mV(OUTPUT_CHANNEL);
+    //     message.shuntVoltageOutput = shuntVoltageOutput;
+    //     current_mAOutput = shuntVoltageOutput/OutputShunt;
+    //     message.current_mAOutput = current_mAOutput;
+    //     loadVoltageOutput = busVoltageOutput + (shuntVoltageOutput / 1000);
+    //     message.loadVoltageOutput = loadVoltageOutput;
         
     //     serial.print("Output Bus Voltage 3:   "); serial.print(busVoltageOutput); serial.println(" V");
     //     serial.print("Output Current 3:       "); serial.print(current_mAOutput); serial.println(" mA");
